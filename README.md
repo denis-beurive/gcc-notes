@@ -34,3 +34,9 @@ echo | gcc -E -Wp,-v - | grep -v "# "
 
 > * `-E`: Stop after the preprocessing stage; do not run the compiler proper. The output is in the form of preprocessed source code, which is sent to the standard output. Input files which don't require preprocessing are ignored.
 > * `-Wp,option`: You can use `-Wp,option` to bypass the compiler driver and pass option directly through to the preprocessor. 
+
+Print the linker search directories:
+
+```bash
+ld --verbose | grep SEARCH_DIR | tr -s ' ;' \\012
+```
