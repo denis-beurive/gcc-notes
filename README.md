@@ -37,7 +37,7 @@ echo | gcc -E -Wp,-v - | grep -v "# "
 > * `-E`: Stop after the preprocessing stage; do not run the compiler proper. The output is in the form of preprocessed source code, which is sent to the standard output. Input files which don't require preprocessing are ignored.
 > * `-Wp,option`: You can use `-Wp,option` to bypass the compiler driver and pass option directly through to the preprocessor. 
 
-# Linker LD
+# Dynamic linker LD
 
 Print the linker search directories:
 
@@ -45,12 +45,9 @@ Print the linker search directories:
 ld --verbose | grep SEARCH_DIR | tr -s ' ;' \\012
 ```
 
-# Dynamic linker LDD
-
 Add search paths for dynamic libraries once and for all (as `root`):
 
 ```bash
 echo "/usr/local/lib" > /etc/ld.so.conf.d/odpic.conf
 rm -f /etc/ld.so.cache && ldconfig
 ```
-
