@@ -1,4 +1,4 @@
-# Notes about GCC
+# Notes about GCC and related tools
 
 Compiling a source code provided through the standard input:
 
@@ -40,3 +40,11 @@ Print the linker search directories:
 ```bash
 ld --verbose | grep SEARCH_DIR | tr -s ' ;' \\012
 ```
+
+Add search paths for dynamic libraries once and for all (as `root`):
+
+```bash
+echo "/usr/local/lib" > /etc/ld.so.conf.d/odpic.conf
+rm -f /etc/ld.so.cache && ldconfig
+```
+
