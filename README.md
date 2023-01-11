@@ -51,3 +51,6 @@ Add search paths for dynamic libraries once and for all (as `root`):
 echo "/usr/local/lib" > /etc/ld.so.conf.d/odpic.conf
 rm -f /etc/ld.so.cache && ldconfig
 ```
+
+> You can set the path to a dynamic library temporarily: `export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib`.
+
