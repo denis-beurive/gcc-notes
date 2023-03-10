@@ -1,4 +1,4 @@
-# Notes about GCC and related tools
+# Notes about GCC and related tools or files
 
 ## GCC
 
@@ -53,4 +53,31 @@ rm -f /etc/ld.so.cache && ldconfig
 ```
 
 > You can set the path to a dynamic library temporarily: `export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib`.
+
+## Makefile
+
+Sometimes, you need to disable all optimisations in an executable built using a `configure` script. This is the case, for example, if you plan to use GDB.
+
+This line may help:
+
+```bash
+find ./ -name Makefile -exec sed -E -i "s/^(C(XX)?FLAGS\\s*=.*)(-O[1-9])(\\s+(.*))?$/\1-O0\4/" {} \;
+find ./ -name Makefile -exec grep -E "^C(XX)?FLAGS\\s*=" {} \;
+```
+
+Tests:
+
+```bash
+$ echo "CFLAGS=-g -O2" | sed -E "s/^(C(XX)?FLAGS\\s*=.*)(-O[1-9])(\\s+(.*))?$/\1-O0\4/"
+CFLAGS=-g -O0
+
+$ echo "CXXFLAGS=-g -O2" | sed -E "s/^(C(XX)?FLAGS\\s*=.*)(-O[1-9])(\\s+(.*))?$/\1-O0\4/"
+CFLAGS=-g -O0
+
+$ echo "CFLAGS=-g -O2 #other options" | sed -E "s/^(C(XX)?FLAGS\\s*=.*)(-O[1-9])(\\s+(.*))?$/\1-O0\4/"
+CFLAGS=-g -O0 #other options
+
+$ echo "CFLAGS=-O2 #other options" | sed -E "s/^(C(XX)?FLAGS\\s*=.*)(-O[1-9])(\\s+(.*))?$/\1-O0\4/"
+CFLAGS=-O0 #other options
+```
 
