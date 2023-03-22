@@ -2,6 +2,8 @@
 
 ## GCC
 
+### Environment discovery
+
 Compiling a source code provided through the standard input:
 
 ```bash
@@ -37,7 +39,25 @@ echo | gcc -E -Wp,-v - | grep -v "# "
 > * `-E`: Stop after the preprocessing stage; do not run the compiler proper. The output is in the form of preprocessed source code, which is sent to the standard output. Input files which don't require preprocessing are ignored.
 > * `-Wp,option`: You can use `-Wp,option` to bypass the compiler driver and pass option directly through to the preprocessor. 
 
-# Dynamic linker LD
+### Compilation
+
+It is highly recommended to set these compilation flags:
+
+```
+-Wall -Wuninitialized -Wmissing-include-dirs -Wextra -Wconversion -Werror -Wfatal-errors -Wformat
+```
+
+However, these flags will likely trigger warning that should (and often _must_) be ignored.
+
+Suppress a warning for a single line of code:
+
+```c
+#pragma GCC diagnostic ignored "-Wuninitialized"
+```
+
+> See [this link](https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html) for a list of warnings to suppress.
+
+## Dynamic linker LD
 
 Print the linker search directories:
 
