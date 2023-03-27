@@ -101,3 +101,18 @@ $ echo "CFLAGS=-O2 #other options" | sed -E "s/^(C(XX)?FLAGS\\s*=.*)(-O[1-9])(\\
 CFLAGS=-O0 #other options
 ```
 
+## Using Valgrind
+
+```bash
+$ valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all -s ./bin/program.exe
+...
+==30454==
+==30454== HEAP SUMMARY:
+==30454==     in use at exit: 0 bytes in 0 blocks
+==30454==   total heap usage: 162,732 allocs, 162,732 frees, 8,480,050 bytes allocated
+==30454==
+==30454== All heap blocks were freed -- no leaks are possible
+==30454==
+==30454== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+```
+
