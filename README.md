@@ -116,3 +116,103 @@ $ valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all -s ./bin/prog
 ==30454== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 ```
 
+## Using "const"
+
+```c
+const char c1
+```
+
+You cannot modify the value of `c1`.
+
+```c
+const char *c2
+```
+
+You cannot modify the content of the memory pointed by `c2`.
+However, you can modify the value of `c2` (the address of the pointed memory location).
+
+```c
+char* const c3
+```
+
+You cannot modify the value of `c3` (the address of the pointed memory location).
+However, you can modify the content of the memory location pointed by `c3`.
+
+```c
+const char* const c4
+```
+
+You cannot modify the value of `c4` (the address of the pointed memory location).
+And, you cannot modify the content of the memory pointed by `c4`.
+
+
+**Illustration**:
+
+```c
+char* set_value(const char* const in_string) {
+    char *c = (char*) malloc(sizeof(char) * (strlen(in_string) + 1));
+    strcpy(c, in_string);
+    return c;
+}
+
+void example2() {
+    // You cannot modify the value of `c1`.
+    const char c1 = 60;
+
+    // You cannot modify the content of the memory pointed by `c2`.
+    // However, you can modify the value of `c2` (the address of the pointed memory location).
+    // NOTE: for this example, we do not initialize the value of `c2` with a constant (ex: `const char *c2 = "abc"`).
+    //       Indeed, in this case, the memory would be allocated in a memory write-protected area
+    //       (the area that contains the executable's code).
+    const char *c2 = set_value("123");
+
+    // You cannot modify the value of `c3` (the address of the pointed memory location).
+    // However, you can modify the content of the memory location pointed by `c3`.
+    // NOTE: do not try to initialize the value of `c3` with a constant (ex: `char* const c3 = "abc"`).
+    //       Indeed, in this case, the memory would be allocated in a memory write-protected area
+    //       (the area that contains the executable's code).
+    char* const c3 = set_value("abc");
+
+    // You cannot modify the value of `c4` (the address of the pointed memory location).
+    // And, you cannot modify the content of the memory pointed by `c4`.
+    const char* const c4 = set_value("def");
+
+    // You cannot modify the value of `c1`.
+    printf("c1 = %c\n", c1);
+
+    // You cannot modify the content of the memory pointed by `c2`.
+    // However, you can modify the value of `c2`.
+    printf("c2 = %s\n", c2);
+    c2 = set_value("new address");
+    printf("c2 = %s\n", c2);
+
+    // You cannot modify the value of `c3`.
+    // However, you can modify the content of the memory pointed by `c3`.
+    printf("c3 = %s\n", c3);
+    *c3 = '1';
+    *(c3+1) = '2';
+    *(c3+2) = '3';
+    *(c3+3) = 0;
+    printf("c3 = %s\n", c3);
+
+    // You cannot modify the value of `c4` (the address of the pointed memory location).
+    // And, you cannot modify the content of the memory pointed by `c4`.
+    printf("c4 = %s\n", c4);
+}
+```
+
+Consequences:
+
+```c
+	const char* function( ... ) { ... }
+```
+
+In this case, the "`const`" is an indicator that the caller does not own the memory.
+The caller must not modify the memory location referenced by the returned value (and, a fortiori, he must not call "`free()`" on the returned value).
+
+```c
+	void function(const char* in_c... ) { ... }
+```
+
+In this case, the "`const`" is an indicator that the _callee_ (in this case, the function) does not own the memory. The memory location referenced by the parameter "`in_c`" must not be modified within the function.
+
