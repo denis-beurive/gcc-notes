@@ -118,18 +118,94 @@ $ valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all -s ./bin/prog
 
 ## Using "const"
 
+### `const <type> <var>`
+
 ```c
 const char c1
 ```
 
-You cannot modify the value of `c1`.
+You cannot modify *value* of `c1`.
+
+Illustration:
+
+```bash
+# The following tests fail.
+
+$ echo "int main(){ const char c=0; c=1; }" | gcc -xc -
+<stdin>: In function 'main':
+<stdin>:1:30: error: assignment of read-only variable 'c'
+
+$ echo "int main(){ const char c; c=1; }" | gcc -xc -
+<stdin>: In function 'main':
+<stdin>:1:28: error: assignment of read-only variable 'c'
+
+$ echo "void nop(const char c){ c = 1; }; int main(){ char c=3; nop(c); }" | gcc -xc -
+<stdin>: In function 'nop':
+<stdin>:1:27: error: assignment of read-only parameter 'c'
+
+# The following tests are OK
+
+$ echo "void nop(const char c){}; int main(){ nop(3); }" | gcc -xc -
+
+$ echo "void nop(const char c){}; int main(){ char c=3; nop(c); }" | gcc -xc -
+```
+
+### `const <type> *<var>`
 
 ```c
 const char *c2
 ```
 
-You cannot modify the content of the memory pointed by `c2`.
+You cannot modify the content of the memory location pointed by `c2`.
 However, you can modify the value of `c2` (the address of the pointed memory location).
+
+```c
+void function(const char* in_c... ) { ... }
+```
+
+In this case, the "`const`" is an indicator that the _callee_ (in this case, the function) does not own the memory location. The memory location referenced by the parameter "`in_c`" must not be modified within the function.
+
+```c
+const char* function( ... ) { ... }
+```
+
+In this case, the "`const`" is an *indicator* that the caller does not own the memory.
+The caller must not modify the memory location referenced by the returned value (and, a fortiori, he must not call "`free()`" on the returned value). However, _by default_, the compiler may NOT stop the caller from acting wrongly.
+
+```bash
+# The following tests fail.
+
+$ echo "int main(){ char value=1; const char *c=&value; *c=1; }" | gcc -xc -
+<stdin>: In function 'main':
+<stdin>:1:51: error: assignment of read-only location '*c'
+
+$ echo "void nop(const char *c) { *c=1; }; int main(){ char value=1; nop(&value); }" | gcc -xc -
+<stdin>: In function 'nop':
+<stdin>:1:29: error: assignment of read-only location '*c'
+
+$ echo "const char* f() { static char c=1; return &c; }; int main(){ char *c=f(); *c=1; }" | gcc -xc -Werror -
+<stdin>: In function 'main':
+<stdin>:1:70: error: initialization discards 'const' qualifier from pointer target type [-Werror=discarded-qualifiers]
+cc1: all warnings being treated as errors
+
+# The following tests do not fail, but are not correct.
+
+$ echo "const char* f() { static char c=1; return &c; }; int main(){ char *c=f(); *c=1; }" | gcc -xc -
+<stdin>: In function 'main':
+<stdin>:1:70: warning: initialization discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+
+# The following tests are OK.
+
+$ echo "int main(){ char value1=1; char value2=1; const char *c=&value1; c=&value2; }" | gcc -xc -
+
+$ echo "void nop(const char *c) {}; int main(){ char value=1; nop(&value); }" | gcc -xc -
+
+$ echo "void nop(const char *c) { char x=0; c=&x; }; int main(){ char value=1; nop(&value); }" | gcc -xc -
+
+$ echo "const char* f() { static char c=1; return &c; }; int main(){ const char *c=f(); }" | gcc -xc -Werror -
+```
+
+### `<type>* const <var>`
 
 ```c
 char* const c3
@@ -138,83 +214,60 @@ char* const c3
 You cannot modify the value of `c3` (the address of the pointed memory location).
 However, you can modify the content of the memory location pointed by `c3`.
 
+Illustration:
+
+```bash
+# The following tests fail.
+
+$ echo "int main(){ char value1=1; char value2=1; char* const c=&value1; c=&value2; }" | gcc -xc -
+<stdin>: In function 'main':
+<stdin>:1:67: error: assignment of read-only variable 'c'
+
+$ echo "void nop(char* const c) { char x; c=&x; }; int main(){ char v=1; nop(&v); }" | gcc -xc -
+<stdin>: In function 'nop':
+<stdin>:1:36: error: assignment of read-only parameter 'c'
+
+# The following tests are OK.
+
+$ echo "int main(){ char value=1; char* const c=&value; *c=2; }" | gcc -xc -
+
+$ echo "void nop(char* const c) { *c=10; }; int main(){ char v=1; nop(&v); }" | gcc -xc -
+```
+
+### `const <type>* const c4`
+
 ```c
 const char* const c4
 ```
 
 You cannot modify the value of `c4` (the address of the pointed memory location).
-And, you cannot modify the content of the memory pointed by `c4`.
+And, you cannot modify the content of the memory location pointed by `c4`.
 
+Illustration:
 
-**Illustration**:
+```bash
+# The following tests fail.
 
-```c
-char* set_value(const char* const in_string) {
-    char *c = (char*) malloc(sizeof(char) * (strlen(in_string) + 1));
-    strcpy(c, in_string);
-    return c;
-}
+$ echo "int main(){ char value=1; const char* const c=&value; *c=2; }" | gcc -xc -
+<stdin>: In function 'main':
+<stdin>:1:57: error: assignment of read-only location '*(const char *)c'
 
-void example2() {
-    // You cannot modify the value of `c1`.
-    const char c1 = 60;
+$ echo "int main(){ char value1=1; char value2=1; const char* const c=&value1; c=&value2; }" | gcc -xc -
+<stdin>: In function 'main':
+<stdin>:1:73: error: assignment of read-only variable 'c'
 
-    // You cannot modify the content of the memory pointed by `c2`.
-    // However, you can modify the value of `c2` (the address of the pointed memory location).
-    // NOTE: for this example, we do not initialize the value of `c2` with a constant (ex: `const char *c2 = "abc"`).
-    //       Indeed, in this case, the memory would be allocated in a memory write-protected area
-    //       (the area that contains the executable's code).
-    const char *c2 = set_value("123");
+$ echo "void nop(const char* const c) { *c=10; }; int main(){ char v=1; nop(&v); }" | gcc -xc -
+<stdin>: In function 'nop':
+<stdin>:1:35: error: assignment of read-only location '*(const char *)c'
 
-    // You cannot modify the value of `c3` (the address of the pointed memory location).
-    // However, you can modify the content of the memory location pointed by `c3`.
-    // NOTE: do not try to initialize the value of `c3` with a constant (ex: `char* const c3 = "abc"`).
-    //       Indeed, in this case, the memory would be allocated in a memory write-protected area
-    //       (the area that contains the executable's code).
-    char* const c3 = set_value("abc");
+$ echo "void nop(const char* const c) { char x=0; c=&x; }; int main(){ char v=1; nop(&v); }" | gcc -xc -
+<stdin>: In function 'nop':
+<stdin>:1:44: error: assignment of read-only parameter 'c'
 
-    // You cannot modify the value of `c4` (the address of the pointed memory location).
-    // And, you cannot modify the content of the memory pointed by `c4`.
-    const char* const c4 = set_value("def");
+# The following tests are OK.
 
-    // You cannot modify the value of `c1`.
-    printf("c1 = %c\n", c1);
-
-    // You cannot modify the content of the memory pointed by `c2`.
-    // However, you can modify the value of `c2`.
-    printf("c2 = %s\n", c2);
-    c2 = set_value("new address");
-    printf("c2 = %s\n", c2);
-
-    // You cannot modify the value of `c3`.
-    // However, you can modify the content of the memory pointed by `c3`.
-    printf("c3 = %s\n", c3);
-    *c3 = '1';
-    *(c3+1) = '2';
-    *(c3+2) = '3';
-    *(c3+3) = 0;
-    printf("c3 = %s\n", c3);
-
-    // You cannot modify the value of `c4` (the address of the pointed memory location).
-    // And, you cannot modify the content of the memory pointed by `c4`.
-    printf("c4 = %s\n", c4);
-}
+echo "void nop(const char* const c) { char v=*c; const char *p=c; }; int main(){ char v=1; nop(&v); }" | gcc -xc -
 ```
-
-Consequences:
-
-```c
-	const char* function( ... ) { ... }
-```
-
-In this case, the "`const`" is an indicator that the caller does not own the memory.
-The caller must not modify the memory location referenced by the returned value (and, a fortiori, he must not call "`free()`" on the returned value).
-
-```c
-	void function(const char* in_c... ) { ... }
-```
-
-In this case, the "`const`" is an indicator that the _callee_ (in this case, the function) does not own the memory. The memory location referenced by the parameter "`in_c`" must not be modified within the function.
 
 ## Retrieve data about a list of dynamic library
 
@@ -224,13 +277,6 @@ This script may be handdy:
 #!/bin/bash
 
 readonly FILES="
-/opt/santesocial/fsv/1.40.14/lib/libjs64.so
-/opt/santesocial/fsv/1.40.14/lib/libsgdlux64.so
-/opt/santesocial/fsv/1.40.14/lib/libsmclux64.so
-/opt/santesocial/fsv/1.40.14/lib/libsmslux64.so
-/opt/santesocial/fsv/1.40.14/lib/libsrtlux64.so
-/opt/santesocial/fsv/1.40.14/lib/libssvlux64.so
-/opt/santesocial/fsv/1.40.14/lib/libstslux64.so
 /usr/lib64/libpcsclite.so.1.0.0
 /usr/lib64/libcrypto.so.3.0.7
 "
@@ -255,27 +301,6 @@ done <<< "${FILES}"
 Output example:
 
 ```
-/opt/santesocial/fsv/1.40.14/lib/libjs64.so
-  md5 "f1e85b14f4ff5a9c1f3ddc3112c57aaa"
-  file format elf64-x86-64
-/opt/santesocial/fsv/1.40.14/lib/libsgdlux64.so
-  md5 "b93ffa157c80ec0150bbb42620949695"
-  file format elf64-x86-64
-/opt/santesocial/fsv/1.40.14/lib/libsmclux64.so
-  md5 "c9f900f12ae4a47e85a5d1ea391f0a23"
-  file format elf64-x86-64
-/opt/santesocial/fsv/1.40.14/lib/libsmslux64.so
-  md5 "051abb37774191c65dfb26af98b6e710"
-  file format elf64-x86-64
-/opt/santesocial/fsv/1.40.14/lib/libsrtlux64.so
-  md5 "c3ddc46643f3ae301a82e70041020309"
-  file format elf64-x86-64
-/opt/santesocial/fsv/1.40.14/lib/libssvlux64.so
-  md5 "355c5951d59821840210eba3a5873872"
-  file format elf64-x86-64
-/opt/santesocial/fsv/1.40.14/lib/libstslux64.so
-  md5 "859cc2fba22c3d656047c1993af1f6fc"
-  file format elf64-x86-64
 /usr/lib64/libpcsclite.so.1.0.0
   md5 "7f208074768f643dca3888538b7c75ee"
   file format elf64-x86-64
