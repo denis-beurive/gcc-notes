@@ -121,10 +121,16 @@ $ valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all -s ./bin/prog
 ### `const <type> <var>`
 
 ```c
-const char c1
+const char c
 ```
 
-You cannot modify *value* of `c1`.
+You cannot modify *value* of `c`. In other terms, `c` must be seen as is read-only variable.
+
+```c
+... function(const char c...) { ... }
+```
+
+In this case, the "`const`" is an indicator that the _callee_ (in this case, the function) cannot modify the value of `c`. In other terms, `c` must be seen as a read-only variable.
 
 Illustration:
 
@@ -153,17 +159,17 @@ $ echo "void nop(const char c){}; int main(){ char c=3; nop(c); }" | gcc -xc -
 ### `const <type> *<var>`
 
 ```c
-const char *c2
+const char *c
 ```
 
-You cannot modify the content of the memory location pointed by `c2`.
-However, you can modify the value of `c2` (the address of the pointed memory location).
+You cannot modify the content of the memory location pointed by `c`.
+However, you can modify the value of `c` (the address of the pointed memory location).
 
 ```c
-void function(const char* in_c... ) { ... }
+... function(const char* c... ) { ... }
 ```
 
-In this case, the "`const`" is an indicator that the _callee_ (in this case, the function) does not own the memory location. The memory location referenced by the parameter "`in_c`" must not be modified within the function.
+In this case, the "`const`" is an indicator that the _callee_ (in this case, the function) does not own the memory location. The memory location referenced by the parameter "`c`" must not be modified within the function. Thus, this prototype tells you that the function will *NOT* modify the content of the memory location which address is provided.
 
 ```c
 const char* function( ... ) { ... }
@@ -208,11 +214,17 @@ $ echo "const char* f() { static char c=1; return &c; }; int main(){ const char 
 ### `<type>* const <var>`
 
 ```c
-char* const c3
+char* const c
 ```
 
-You cannot modify the value of `c3` (the address of the pointed memory location).
-However, you can modify the content of the memory location pointed by `c3`.
+You cannot modify the value of `c` (the address of the pointed memory location).
+However, you can modify the content of the memory location pointed by `c`.
+
+```c
+... function(char* const c... ) { ... }
+```
+
+In this case, the "`const`" is an indicator that the _callee_ (in this case, the function) cannot modify the value of `c`. however, it can modify the content of the memory location pointed by `c`. Thus, this prototype tells you that the function will (_very likely_) modify the content of the memory location which address is provided.
 
 Illustration:
 
@@ -237,11 +249,17 @@ $ echo "void nop(char* const c) { *c=10; }; int main(){ char v=1; nop(&v); }" | 
 ### `const <type>* const c4`
 
 ```c
-const char* const c4
+const char* const c
 ```
 
-You cannot modify the value of `c4` (the address of the pointed memory location).
-And, you cannot modify the content of the memory location pointed by `c4`.
+You cannot modify the value of `c` (the address of the pointed memory location).
+And, you cannot modify the content of the memory location pointed by `c`.
+
+```c
+... function(const char* const c... ) { ... }
+```
+
+In this case, the "`const`" is an indicator that the _callee_ (in this case, the function) cannot modify the value of `c` (the address of the pointed memory location), and cannot modify the content of the memory location which address is provided. Thus, this prototype tells you that the function will *NOT* modify the content of the memory location which address is provided.
 
 Illustration:
 
