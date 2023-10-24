@@ -216,3 +216,70 @@ The caller must not modify the memory location referenced by the returned value 
 
 In this case, the "`const`" is an indicator that the _callee_ (in this case, the function) does not own the memory. The memory location referenced by the parameter "`in_c`" must not be modified within the function.
 
+## Retrieve data about a list of dynamic library
+
+This script may be handdy:
+
+```bash
+#!/bin/bash
+
+readonly FILES="
+/opt/santesocial/fsv/1.40.14/lib/libjs64.so
+/opt/santesocial/fsv/1.40.14/lib/libsgdlux64.so
+/opt/santesocial/fsv/1.40.14/lib/libsmclux64.so
+/opt/santesocial/fsv/1.40.14/lib/libsmslux64.so
+/opt/santesocial/fsv/1.40.14/lib/libsrtlux64.so
+/opt/santesocial/fsv/1.40.14/lib/libssvlux64.so
+/opt/santesocial/fsv/1.40.14/lib/libstslux64.so
+/usr/lib64/libpcsclite.so.1.0.0
+/usr/lib64/libcrypto.so.3.0.7
+"
+
+function print_info {
+  declare -r path="${1}"
+  declare -r h=$(md5sum "${path}" | cut -d" " -f1)
+  declare -r arch=$(export LANG=en_US.UTF-8; export LANGUAGE=en; objdump -f "${path}" | grep "file format" | cut -d: -f2 | sed "s/^[ \t]*//");
+
+  printf "%s\n" "${path}"
+  printf "  md5 \"%s\"\n" "${h}"
+  printf "  %s\n" "${arch}"
+}
+
+while IFS= read -r file; do
+  if [[ -n $file ]]; then
+    print_info "${file}"
+  fi
+done <<< "${FILES}"
+```
+
+Output example:
+
+```
+/opt/santesocial/fsv/1.40.14/lib/libjs64.so
+  md5 "f1e85b14f4ff5a9c1f3ddc3112c57aaa"
+  file format elf64-x86-64
+/opt/santesocial/fsv/1.40.14/lib/libsgdlux64.so
+  md5 "b93ffa157c80ec0150bbb42620949695"
+  file format elf64-x86-64
+/opt/santesocial/fsv/1.40.14/lib/libsmclux64.so
+  md5 "c9f900f12ae4a47e85a5d1ea391f0a23"
+  file format elf64-x86-64
+/opt/santesocial/fsv/1.40.14/lib/libsmslux64.so
+  md5 "051abb37774191c65dfb26af98b6e710"
+  file format elf64-x86-64
+/opt/santesocial/fsv/1.40.14/lib/libsrtlux64.so
+  md5 "c3ddc46643f3ae301a82e70041020309"
+  file format elf64-x86-64
+/opt/santesocial/fsv/1.40.14/lib/libssvlux64.so
+  md5 "355c5951d59821840210eba3a5873872"
+  file format elf64-x86-64
+/opt/santesocial/fsv/1.40.14/lib/libstslux64.so
+  md5 "859cc2fba22c3d656047c1993af1f6fc"
+  file format elf64-x86-64
+/usr/lib64/libpcsclite.so.1.0.0
+  md5 "7f208074768f643dca3888538b7c75ee"
+  file format elf64-x86-64
+/usr/lib64/libcrypto.so.3.0.7
+  md5 "ee7151cec8e037bc26e84967965fc6c0"
+  file format elf64-x86-64
+```
