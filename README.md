@@ -326,3 +326,27 @@ Output example:
   md5 "ee7151cec8e037bc26e84967965fc6c0"
   file format elf64-x86-64
 ```
+
+## Perform actions on all source files
+
+```bash
+#/bin/bash
+
+readonly FILES="files.txt"
+
+rm -f "${FILES}"
+find ./src -type f -name "*.c" >> "${FILES}"
+find ./src -type f -name "*.h" >> "${FILES}"
+find ./examples -type f -name "*.c" >> "${FILES}"
+find ./examples -type f -name "*.h" >> "${FILES}"
+
+function action {
+  readonly file="${1}"
+  echo "${file}"
+}
+
+while IFS= read -r file; do
+  action "${file}"
+done < "${FILES}"
+```
+
