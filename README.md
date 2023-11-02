@@ -341,12 +341,24 @@ find ./examples -type f -name "*.c" >> "${FILES}"
 find ./examples -type f -name "*.h" >> "${FILES}"
 
 function action {
-  readonly file="${1}"
-  echo "${file}"
+  declare -r _file="${1}"
+  echo "${_file}"
 }
 
 while IFS= read -r file; do
   action "${file}"
 done < "${FILES}"
 ```
+
+> If you want to remove all comments from the source code (see [scc](https://github.com/jleffler/scc-snapshots)):
+>
+> ```bash
+> function action {
+>   declare -r _file="${1}"
+>   declare -r _dest="${_file}.new"
+>   scc "${_file}" | perl -e 'use strict; my @lines = <STDIN>; my $text = join("", @lines); $text =~ s/\n+/\n/mg; printf("%s\n", $text);' > "${_dest}"
+>   rm -f "${_file}"
+>   mv "${_dest}" "${_file}"
+> }
+> ```
 
