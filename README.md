@@ -362,3 +362,59 @@ done < "${FILES}"
 > }
 > ```
 
+## Reformat code
+
+You can use [clang-format](https://clang.llvm.org/docs/ClangFormat.html).
+
+Under Windows: install `clang-format` using `apt install clang`.
+
+Configuration file example (file `.clang-format`):
+
+```
+---
+# We'll use defaults from the LLVM style, but with 4 columns indentation.
+BasedOnStyle: LLVM
+IndentWidth: 4
+---
+Language: Cpp
+ColumnLimit: 0
+AlignConsecutiveAssignments: Consecutive
+
+# Force pointers to the type for C++.
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+# Function calls.
+AlignAfterOpenBracket: true  # If true, horizontally aligns arguments after an open bracket.
+BinPackArguments: false
+AllowAllArgumentsOnNextLine: false
+
+# Functions declarations.
+BinPackParameters: false # If false, a function declaration’s or function definition’s parameters will either all be on the same line or will have one line each.
+AllowAllParametersOfDeclarationOnNextLine: true
+---
+```
+
+> This configuration will reformat the code so that all function calls will be written on a single line.
+
+Command line options:
+
+```
+--style-file=</path/to/clang-format/config-file>
+--files=</path/to/file/that/contains/list/of/c/files>
+```
+
+Example:
+
+```bash
+find ./src -name "*.c" -exec clang-format --style-file=clang-format.conf {} \;
+# or
+find ./src -name "*.c" -print > files.lst
+clang-format --style-file=clang-format.conf --files=files.lst
+```
+
+> Of course, you can call `clang-format` through Make or Cmake.
+
+
+
+
