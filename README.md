@@ -116,6 +116,16 @@ $ valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all -s ./bin/prog
 ==30454== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 ```
 
+TYPE "11 bytes in 1 blocks are **still reachable** in loss record 1 of 14":
+
+> These blocks were not freed, but they could have been freed (if the programmer had wanted to) because the program still
+> was keeping track of pointers to those memory blocks ([source](https://stackoverflow.com/questions/3840582/still-reachable-leak-detected-by-valgrind)).
+
+TYPE "Conditional jump or move depends on uninitialised value(s)"
+
+> This error is caused if you forget to initialize variables before using or accessing them. You can usually re-run valgrind with the flag
+> `--track-origins=yes` to see where the uninitialized value came from.
+
 ## Using "const"
 
 ### `const <type> <var>`
