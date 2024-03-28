@@ -426,5 +426,34 @@ clang-format --style-file=clang-format.conf --files=files.lst
 > Of course, you can call `clang-format` through Make or Cmake.
 
 
+# Using strptime
 
+```c
+#include <time.h>
 
+/**
+ * Conversion d'une date.
+ *
+ * @param in_date Date à convertir.
+ *        Format de la date: "2023-05-16T17:46:57Z'
+ * @param out_epoch Adresse d'une valeur entière pour le stockage du timestamp.
+ * @return Réussite: 1 (TRUE).
+ *         Erreur: 0 (FALSE). Une erreur signifie que la date passée en paramètre n'est pas valide.
+ * @note Pour connaître le type de "time_t":
+ *       `echo | gcc -E -xc -include 'time.h' - | grep time_t`
+ */
+
+int date_to_timestamp(const char* const in_date, time_t* const out_epoch) {
+    struct tm stm;
+    memset(&stm, 0, sizeof(struct tm)); // indispensable!
+
+    *out_epoch = 0;
+    if (NULL == strptime(in_date, "%Y-%m-%dT%H:%M:%SZ", &stm)) {
+        // Erreur: la date passée en paramètre n'est pas compatible avec le format.
+        return 0;
+    }
+    *out_epoch = mktime(&stm);
+    if (-1 == *out_epoch) { return 0; } // cette erreur ne devrait pas se produire
+    return 1;
+}
+```
